@@ -205,27 +205,32 @@ export default function MapVisualizer({
     }
   }, [origin, destination, onSelectPoint]);
 
-  // Update Route Polyline (Draw mode-colored leg polylines)
+  // Update Route Polyline (Draw continuous mode-colored leg polylines)
   useEffect(() => {
     if (!leafletMap.current || !routeLayerRef.current) return;
     routeLayerRef.current.clearLayers();
 
     if (activeRoute?.legs && activeRoute.legs.length > 0) {
+      let prevEndCoord = null;
       activeRoute.legs.forEach((leg) => {
         const modeColors = {
-          metro: "#1d4ed8",
-          water_metro: "#0d9488",
-          bus: "#ea580c",
-          walk: "#475569"
+          metro: "#1d4ed8",        // Blue for Metro
+          water_metro: "#0d9488",  // Teal for Water Metro
+          bus: "#ea580c",          // Orange for Feeder Bus
+          walk: "#64748b"          // Slate for Walk Transfer
         };
         const color = modeColors[leg.mode] || "#2563eb";
-        const isWalk = leg.mode === "walk";
         if (leg.geometry && leg.geometry.length > 0) {
-          L.polyline(leg.geometry, {
+          let legGeom = [...leg.geometry];
+          if (prevEndCoord) {
+            legGeom.unshift(prevEndCoord);
+          }
+          prevEndCoord = legGeom[legGeom.length - 1];
+
+          L.polyline(legGeom, {
             color: color,
-            weight: isWalk ? 5 : 7,
+            weight: 7,
             opacity: 0.95,
-            dashArray: isWalk ? "6, 8" : null,
             lineCap: "round",
             lineJoin: "round"
           }).addTo(routeLayerRef.current);
@@ -239,7 +244,7 @@ export default function MapVisualizer({
       const poly = L.polyline(activeRoute.route_polyline, {
         color: "#2563eb",
         weight: 7,
-        opacity: 0.9,
+        opacity: 0.95,
         lineCap: "round",
         lineJoin: "round"
       }).addTo(routeLayerRef.current);

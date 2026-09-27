@@ -575,16 +575,39 @@
       if (activeRouteLayer) map.removeLayer(activeRouteLayer);
       activeRouteLayer = L.layerGroup().addTo(map);
 
-      // Draw ONE SINGLE CONTINUOUS SOLID LINE for the entire route
-      if (data.route_polyline && data.route_polyline.length > 0) {
-        const poly = L.polyline(data.route_polyline, {
-          color: '#2563eb',
-          weight: 7,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }).addTo(activeRouteLayer);
+      // Draw continuous mode-colored polylines for each transit mode leg
+      if (data.legs && data.legs.length > 0) {
+        let prevEndCoord = null;
+        data.legs.forEach(leg => {
+          const modeColors = {
+            metro: '#1d4ed8',        // Blue for Metro
+            water_metro: '#0d9488',  // Teal for Water Metro
+            bus: '#ea580c',          // Orange for Feeder Bus
+            walk: '#64748b'          // Slate for Walk Transfer
+          };
+          const color = modeColors[leg.mode] || '#2563eb';
+          if (leg.geometry && leg.geometry.length > 0) {
+            let legGeom = [...leg.geometry];
+            if (prevEndCoord) {
+              legGeom.unshift(prevEndCoord);
+            }
+            prevEndCoord = legGeom[legGeom.length - 1];
 
+            L.polyline(legGeom, {
+              color: color,
+              weight: 7,
+              opacity: 0.95,
+              lineCap: 'round',
+              lineJoin: 'round'
+            }).addTo(activeRouteLayer);
+          }
+        });
+
+        if (data.route_polyline && data.route_polyline.length > 0) {
+          map.fitBounds(L.polyline(data.route_polyline).getBounds(), { padding: [60, 60] });
+        }
+      } else if (data.route_polyline && data.route_polyline.length > 0) {
+        const poly = L.polyline(data.route_polyline, { color: '#2563eb', weight: 7, opacity: 0.95 }).addTo(activeRouteLayer);
         map.fitBounds(poly.getBounds(), { padding: [60, 60] });
       }
 
