@@ -145,70 +145,11 @@ export default function MapVisualizer({
     };
   }, [pickingMode, onSelectPoint]);
 
-  // Update Network Lines & Subtle Stop Dots Layer
+  // Keep map clean on initial load (no lines, no dots)
   useEffect(() => {
-    if (!leafletMap.current || !networkData?.stops || !networkLayerRef.current) return;
+    if (!leafletMap.current || !networkLayerRef.current) return;
     networkLayerRef.current.clearLayers();
-
-    // 1. Draw Network Lines (Metro, Water Metro, Feeder Buses)
-    if (networkData.edges) {
-      networkData.edges.forEach((edge) => {
-        if (edge.geometry && edge.geometry.length > 0 && edge.mode !== "walk") {
-          const color = edge.mode === "water_metro" ? "#0d9488" : edge.mode === "bus" ? "#f97316" : "#2563eb";
-          L.polyline(edge.geometry, {
-            color: color,
-            weight: edge.mode === "metro" ? 4 : 3,
-            opacity: 0.65,
-            lineCap: "round",
-            lineJoin: "round"
-          }).addTo(networkLayerRef.current);
-        }
-      });
-    }
-
-    // 2. Draw subtle small station dots (no emoji icon clutter)
-    networkData.stops.forEach((stop) => {
-      let color = "#2563eb";
-      if (stop.mode === "water_metro") color = "#0d9488";
-      else if (stop.mode === "bus") color = "#f97316";
-
-      const circle = L.circleMarker([stop.lat, stop.lon], {
-        radius: 4,
-        fillColor: color,
-        color: "#ffffff",
-        weight: 1.5,
-        fillOpacity: 0.9
-      }).addTo(networkLayerRef.current);
-
-      circle.bindPopup(`
-        <div style="font-family:sans-serif;padding:4px;text-align:center;min-width:180px;">
-          <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:2px;">${stop.name}</div>
-          <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;margin-bottom:8px;">
-            ${stop.agency} • ${stop.mode.replace("_", " ")}
-          </div>
-          <div style="display:flex;gap:6px;justify-content:center;">
-            <button id="btn-stop-start-${stop.id}" style="background:#059669;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
-              🚀 Set Start
-            </button>
-            <button id="btn-stop-dest-${stop.id}" style="background:#dc2626;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
-              🏁 Set End
-            </button>
-          </div>
-        </div>
-      `);
-
-      circle.on("popupopen", () => {
-        document.getElementById(`btn-stop-start-${stop.id}`)?.addEventListener("click", () => {
-          leafletMap.current.closePopup();
-          onSelectPoint("origin", stop);
-        });
-        document.getElementById(`btn-stop-dest-${stop.id}`)?.addEventListener("click", () => {
-          leafletMap.current.closePopup();
-          onSelectPoint("destination", stop);
-        });
-      });
-    });
-  }, [networkData, onSelectPoint]);
+  }, [networkData]);
 
   // Update Origin & Destination Custom Pin Markers
   useEffect(() => {
