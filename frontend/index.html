@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>smartRoute - AI-Enabled Multimodal Transit (Greater Kochi)</title>
+  <title>smartRoute - AI-Enabled Multimodal Transit </title>
   <meta name="theme-color" content="#2563eb" />
   <!-- PWA Manifest -->
   <link rel="manifest" href="/static/public/manifest.json" />
@@ -15,13 +16,31 @@
   <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
-    #map { height: 100%; width: 100%; z-index: 1; }
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    .picking-mode-cursor { cursor: crosshair !important; }
+    #map {
+      height: 100%;
+      width: 100%;
+      z-index: 1;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .picking-mode-cursor {
+      cursor: crosshair !important;
+    }
   </style>
 </head>
+
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
   <!-- Header -->
@@ -32,17 +51,19 @@
       </div>
       <div>
         <h1 class="text-lg font-bold tracking-wide flex items-center gap-2">
-          smartRoute <span class="text-xs bg-blue-500/30 text-blue-300 font-mono px-2 py-0.5 rounded">MaaS Platform</span>
+          smartRoute <span class="text-xs bg-blue-500/30 text-blue-300 font-mono px-2 py-0.5 rounded">MaaS
+            Platform</span>
         </h1>
-        <p class="text-xs text-slate-400">Greater Kochi Integrated Transit • 50% Build Milestone</p>
       </div>
     </div>
     <div class="flex items-center gap-2 text-xs">
-      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium">
+      <span
+        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         API Connected
       </span>
-      <a href="/docs" target="_blank" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition">
+      <a href="/docs" target="_blank"
+        class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition">
         Swagger Docs ↗
       </a>
     </div>
@@ -53,45 +74,53 @@
 
     <!-- Left Sidebar: Journey Planner & Stops -->
     <aside class="w-96 bg-white border-r border-slate-200 flex flex-col shadow-lg z-10 flex-shrink-0">
-      
+
       <!-- Tabs -->
       <div class="flex border-b border-slate-200 bg-slate-100/70 p-1.5 gap-1 text-sm font-medium">
-        <button id="tab-plan-btn" onclick="switchTab('plan')" class="flex-1 py-1.5 px-3 rounded-md bg-white shadow-sm text-blue-600 font-semibold flex items-center justify-center gap-1.5 transition">
+        <button id="tab-plan-btn" onclick="switchTab('plan')"
+          class="flex-1 py-1.5 px-3 rounded-md bg-white shadow-sm text-blue-600 font-semibold flex items-center justify-center gap-1.5 transition">
           <i class="ph ph-path"></i> Plan Trip
         </button>
-        <button id="tab-network-btn" onclick="switchTab('network')" class="flex-1 py-1.5 px-3 rounded-md text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
+        <button id="tab-network-btn" onclick="switchTab('network')"
+          class="flex-1 py-1.5 px-3 rounded-md text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
           <i class="ph ph-tree-structure"></i> Transit Network
         </button>
       </div>
 
       <!-- Tab Content: Plan Journey -->
       <div id="tab-plan" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
-        
+
         <!-- Form -->
         <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-          
+
           <!-- Origin -->
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1">
                 <i class="ph ph-map-pin text-emerald-600"></i> Origin Location
               </label>
-              <button type="button" id="btn-pick-orig" onclick="togglePickingMode('origin')" class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-white text-blue-600 border-blue-300 hover:bg-blue-50 transition">
+              <button type="button" id="btn-pick-orig" onclick="togglePickingMode('origin')"
+                class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-white text-blue-600 border-blue-300 hover:bg-blue-50 transition">
                 🎯 Pick on Map
               </button>
             </div>
-            <select id="origin-select" onchange="onOriginChange()" class="w-full text-sm p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+            <select id="origin-select" onchange="onOriginChange()"
+              class="w-full text-sm p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
               <option value="">Select departure point or pick on map...</option>
             </select>
-            <div id="origin-custom-badge" class="hidden mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs flex items-center justify-between">
+            <div id="origin-custom-badge"
+              class="hidden mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs flex items-center justify-between">
               <span id="origin-custom-name" class="font-medium text-emerald-900 truncate"></span>
-              <button onclick="clearCustomPoint('origin')" class="text-slate-400 hover:text-red-500 font-bold px-1 text-xs">✕</button>
+              <button onclick="clearCustomPoint('origin')"
+                class="text-slate-400 hover:text-red-500 font-bold px-1 text-xs">✕</button>
             </div>
           </div>
 
           <!-- Swap Button -->
           <div class="flex justify-center -my-1">
-            <button type="button" onclick="swapOriginDest()" class="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-full shadow-sm text-slate-600 transition" title="Swap Origin and Destination">
+            <button type="button" onclick="swapOriginDest()"
+              class="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-full shadow-sm text-slate-600 transition"
+              title="Swap Origin and Destination">
               <i class="ph ph-arrows-down-up"></i>
             </button>
           </div>
@@ -102,16 +131,20 @@
               <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1">
                 <i class="ph ph-flag text-rose-600"></i> Destination Location
               </label>
-              <button type="button" id="btn-pick-dest" onclick="togglePickingMode('destination')" class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-white text-blue-600 border-blue-300 hover:bg-blue-50 transition">
+              <button type="button" id="btn-pick-dest" onclick="togglePickingMode('destination')"
+                class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-white text-blue-600 border-blue-300 hover:bg-blue-50 transition">
                 🎯 Pick on Map
               </button>
             </div>
-            <select id="dest-select" onchange="onDestChange()" class="w-full text-sm p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+            <select id="dest-select" onchange="onDestChange()"
+              class="w-full text-sm p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
               <option value="">Select destination or pick on map...</option>
             </select>
-            <div id="dest-custom-badge" class="hidden mt-1 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs flex items-center justify-between">
+            <div id="dest-custom-badge"
+              class="hidden mt-1 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs flex items-center justify-between">
               <span id="dest-custom-name" class="font-medium text-rose-900 truncate"></span>
-              <button onclick="clearCustomPoint('destination')" class="text-slate-400 hover:text-red-500 font-bold px-1 text-xs">✕</button>
+              <button onclick="clearCustomPoint('destination')"
+                class="text-slate-400 hover:text-red-500 font-bold px-1 text-xs">✕</button>
             </div>
           </div>
 
@@ -121,13 +154,16 @@
               ⚡ Quick-Filter Toggle
             </label>
             <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-lg text-xs font-medium">
-              <button type="button" id="pref-fastest" onclick="setPreference('fastest')" class="py-1 rounded-md bg-white shadow text-blue-700 font-bold transition">
+              <button type="button" id="pref-fastest" onclick="setPreference('fastest')"
+                class="py-1 rounded-md bg-white shadow text-blue-700 font-bold transition">
                 ⚡ Fastest
               </button>
-              <button type="button" id="pref-cheapest" onclick="setPreference('cheapest')" class="py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
+              <button type="button" id="pref-cheapest" onclick="setPreference('cheapest')"
+                class="py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
                 💰 Cheapest
               </button>
-              <button type="button" id="pref-greenest" onclick="setPreference('greenest')" class="py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
+              <button type="button" id="pref-greenest" onclick="setPreference('greenest')"
+                class="py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
                 🌿 Greenest
               </button>
             </div>
@@ -137,19 +173,23 @@
           <div>
             <span class="text-[11px] text-slate-400 font-medium">Quick Test Trips:</span>
             <div class="flex flex-wrap gap-1.5 mt-1">
-              <button onclick="setTrip('BUS_RAJAGIRI', 'WM_S8')" class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
+              <button onclick="setTrip('BUS_RAJAGIRI', 'WM_S8')"
+                class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
                 Rajagiri → Fort Kochi
               </button>
-              <button onclick="setTrip('KMRL_ALVA', 'BUS_INFOPARK_P1')" class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
+              <button onclick="setTrip('KMRL_ALVA', 'BUS_INFOPARK_P1')"
+                class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
                 Aluva → Infopark
               </button>
-              <button onclick="setTrip('WM_S1', 'KMRL_MGRD')" class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
+              <button onclick="setTrip('WM_S1', 'KMRL_MGRD')"
+                class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
                 Vyttila → MG Road
               </button>
             </div>
           </div>
 
-          <button onclick="planTrip()" id="plan-btn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+          <button onclick="planTrip()" id="plan-btn"
+            class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
             <i class="ph ph-magnifying-glass font-bold"></i> Find Multimodal Route
           </button>
         </div>
@@ -157,9 +197,12 @@
         <!-- Result Container -->
         <div id="route-result" class="hidden space-y-3">
           <!-- Carbon Footprint / Eco-Savings Counter Widget -->
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-3 shadow-sm flex items-center justify-between text-xs" id="eco-widget">
+          <div
+            className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-3 shadow-sm flex items-center justify-between text-xs"
+            id="eco-widget">
             <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+              <div
+                class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
                 🌱
               </div>
               <div>
@@ -169,13 +212,15 @@
             </div>
             <div class="text-right">
               <span id="co2-saved-val" class="text-base font-extrabold text-emerald-700 block">0.00 kg CO₂</span>
-              <span class="text-[10px] text-slate-500">Kochi1 Card: <b id="kochi1-fare-val" class="text-slate-800">₹0</b></span>
+              <span class="text-[10px] text-slate-500">Kochi1 Card: <b id="kochi1-fare-val"
+                  class="text-slate-800">₹0</b></span>
             </div>
           </div>
 
           <div class="flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Route Options</h3>
-            <span id="route-count-badge" class="text-[10px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">0 options</span>
+            <span id="route-count-badge"
+              class="text-[10px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">0 options</span>
           </div>
 
           <div id="options-container" class="space-y-3">
@@ -223,17 +268,25 @@
       <div id="map"></div>
 
       <!-- Layer Switcher Floating Pill -->
-      <div class="absolute top-4 right-14 z-10 bg-white/90 backdrop-blur-md border border-slate-200 shadow-md rounded-xl p-1 flex gap-1 text-xs">
-        <button onclick="setMapTile('google_streets')" id="btn-tile-streets" class="px-2.5 py-1 rounded-lg font-medium bg-slate-900 text-white transition">Google Streets</button>
-        <button onclick="setMapTile('google_hybrid')" id="btn-tile-hybrid" class="px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Google Satellite</button>
-        <button onclick="setMapTile('osm')" id="btn-tile-osm" class="px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">OpenStreetMap</button>
+      <div
+        class="absolute top-4 right-14 z-10 bg-white/90 backdrop-blur-md border border-slate-200 shadow-md rounded-xl p-1 flex gap-1 text-xs">
+        <button onclick="setMapTile('google_streets')" id="btn-tile-streets"
+          class="px-2.5 py-1 rounded-lg font-medium bg-slate-900 text-white transition">Google Streets</button>
+        <button onclick="setMapTile('google_hybrid')" id="btn-tile-hybrid"
+          class="px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Google
+          Satellite</button>
+        <button onclick="setMapTile('osm')" id="btn-tile-osm"
+          class="px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">OpenStreetMap</button>
       </div>
 
       <!-- Picking Mode Alert Banner -->
-      <div id="picking-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 border border-slate-700 animate-bounce">
+      <div id="picking-banner"
+        class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 border border-slate-700 animate-bounce">
         <span class="w-3 h-3 rounded-full bg-blue-400 animate-ping"></span>
-        <span id="picking-banner-text" class="text-xs font-semibold tracking-wide">📍 Click anywhere on map to set point</span>
-        <button onclick="togglePickingMode(null)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[11px] font-medium">Cancel (Esc)</button>
+        <span id="picking-banner-text" class="text-xs font-semibold tracking-wide">📍 Click anywhere on map to set
+          point</span>
+        <button onclick="togglePickingMode(null)"
+          class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[11px] font-medium">Cancel (Esc)</button>
       </div>
     </main>
 
@@ -275,14 +328,14 @@
         const btn = document.getElementById(`pref-${p}`);
         if (btn) {
           if (p === pref) {
-            btn.className = `py-1.5 rounded-md bg-white shadow font-bold transition ${p==='greenest' ? 'text-emerald-700' : 'text-blue-700'}`;
+            btn.className = `py-1.5 rounded-md bg-white shadow font-bold transition ${p === 'greenest' ? 'text-emerald-700' : 'text-blue-700'}`;
           } else {
             btn.className = 'py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition';
           }
         }
       });
       if ((customOriginPoint || document.getElementById('origin-select').value) &&
-          (customDestPoint || document.getElementById('dest-select').value)) {
+        (customDestPoint || document.getElementById('dest-select').value)) {
         planTrip();
       }
     }
@@ -292,7 +345,7 @@
       currentTileLayer = L.tileLayer(TILES[type], { maxZoom: 20 }).addTo(map);
       ['streets', 'hybrid', 'osm'].forEach(t => {
         const btn = document.getElementById(`btn-tile-${t}`);
-        if (btn) btn.className = (t === type || (t==='streets' && type==='google_streets') || (t==='hybrid' && type==='google_hybrid'))
+        if (btn) btn.className = (t === type || (t === 'streets' && type === 'google_streets') || (t === 'hybrid' && type === 'google_hybrid'))
           ? 'px-2.5 py-1 rounded-lg font-medium bg-slate-900 text-white transition'
           : 'px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition';
       });
@@ -305,7 +358,7 @@
           const data = await res.json();
           if (data.display_name) return data.display_name.split(',').slice(0, 3).join(', ');
         }
-      } catch (e) {}
+      } catch (e) { }
       return `Point (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
     }
 
@@ -366,7 +419,7 @@
         document.getElementById('dest-custom-badge').classList.remove('hidden');
       }
       if ((customOriginPoint || document.getElementById('origin-select').value) &&
-          (customDestPoint || document.getElementById('dest-select').value)) {
+        (customDestPoint || document.getElementById('dest-select').value)) {
         planTrip();
       }
     }
@@ -499,7 +552,7 @@
       document.getElementById('route-result').classList.remove('hidden');
       currentRouteOptions = (data.options && data.options.length > 0) ? data.options : [data];
       document.getElementById('route-count-badge').innerText = `${currentRouteOptions.length} option${currentRouteOptions.length > 1 ? 's' : ''}`;
-      
+
       const mainRoute = currentRouteOptions[0];
       const co2Val = mainRoute.co2_saved_kg || (mainRoute.total_distance_km * 0.12).toFixed(2);
       const kochi1Val = mainRoute.kochi1_card_fare || Math.round(mainRoute.total_fare * 0.8);
@@ -525,7 +578,7 @@
         const isSelected = (idx === selectedOptionIndex);
         const co2Val = opt.co2_saved_kg || (opt.total_distance_km * 0.12).toFixed(2);
         card.className = `border rounded-xl p-3.5 transition ${isSelected ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/20 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'}`;
-        
+
         const legsHtml = opt.legs.map(leg => {
           const cfg = LEG_MODE_CONFIG[leg.mode] || LEG_MODE_CONFIG.walk;
           return `
@@ -547,7 +600,7 @@
         card.innerHTML = `
           <div onclick="selectOption(${idx})" class="cursor-pointer space-y-2">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-800">${opt.title || `Option ${idx+1}`}</span>
+              <span class="text-xs font-bold text-slate-800">${opt.title || `Option ${idx + 1}`}</span>
               <div class="text-right">
                 <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">₹${opt.total_fare}</span>
                 <span class="text-[10px] text-emerald-600 block mt-0.5 font-semibold">🌱 ${co2Val}kg CO₂</span>
@@ -634,4 +687,5 @@
     window.onload = () => { initMap(); };
   </script>
 </body>
+
 </html>
