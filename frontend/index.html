@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>smartRoute - AI-Enabled Multimodal Transit (Greater Kochi)</title>
+  <meta name="theme-color" content="#2563eb" />
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/static/public/manifest.json" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    #map { height: 100%; width: 100%; z-index: 1; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .picking-mode-cursor { cursor: crosshair !important; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between shadow-md z-10">
+    <div class="flex items-center gap-3">
+      <div class="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center">
+        <i class="ph ph-navigation-arrow text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-wide flex items-center gap-2">
+          smartRoute <span class="text-xs bg-blue-500/30 text-blue-300 font-mono px-2 py-0.5 rounded">MaaS Platform</span>
+        </h1>
+        <p class="text-xs text-slate-400">Greater Kochi Integrated Transit • 50% Build Milestone</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        API Connected
+      </span>
+      <a href="/docs" target="_blank" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition">
+        Swagger Docs ↗
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Body Grid -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Sidebar: Journey Planner & Stops -->
+    <aside class="w-96 bg-white border-r border-slate-200 flex flex-col shadow-lg z-10 flex-shrink-0">
+      
+      <!-- Tabs -->
+      <div class="flex border-b border-slate-200 bg-slate-100/70 p-1.5 gap-1 text-sm font-medium">
+        <button id="tab-plan-btn" onclick="switchTab('plan')" class="flex-1 py-1.5 px-3 rounded-md bg-white shadow-sm text-blue-600 font-semibold flex items-center justify-center gap-1.5 transition">
+          <i class="ph ph-path"></i> Plan Trip
+        </button>
+        <button id="tab-network-btn" onclick="switchTab('network')" class="flex-1 py-1.5 px-3 rounded-md text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
+          <i class="ph ph-tree-structure"></i> Transit Network
+        </button>
+      </div>
+
+      <!-- Tab Content: Plan Journey -->
+      <div id="tab-plan" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+        
+        <!-- Form -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+          
+          <!-- Origin -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                <i class="ph ph-map-pin text-emerald-600"></i> Origin Location
+              </label>
+              <button type="button" id="btn-pick-orig" onclick="togglePickingMode('origin')" class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-white text-blue-600 border-blue-300 hover:bg-blue-50 transition">
+                🎯 Pick on Map
+              </button>
+            </div>
+            <select id="origin-select" onchange="onOriginChange()" class="w-full text-sm p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+              <option value="">Select departure point or pick on map...</option>
+            </select>
+            <div id="origin-custom-badge" class="hidden mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs flex items-center justify-between">
+              <span id="origin-custom-name" class="font-medium text-emerald-900 truncate"></span>
+              <button onclick="clearCustomPoint('origin')" class="text-slate-400 hover:text-red-500 font-bold px-1 text-xs">✕</button>
+            </div>
+          </div>
+
+          <!-- Swap Button -->
+          <div class="flex justify-center -my-1">
+            <button type="button" onclick="swapOriginDest()" class="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-full shadow-sm text-slate-600 transition" title="Swap Origin and Destination">
+              <i class="ph ph-arrows-down-up"></i>
+            </button>
+          </div>
+
+          <!-- Destination -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                <i class="ph ph-flag text-rose-600"></i> Destination Location
+              </label>
+              <button type="button" id="btn-pick-dest" onclick="togglePickingMode('destination')" class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-white text-blue-600 border-blue-300 hover:bg-blue-50 transition">
+                🎯 Pick on Map
+              </button>
+            </div>
+            <select id="dest-select" onchange="onDestChange()" class="w-full text-sm p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+              <option value="">Select destination or pick on map...</option>
+            </select>
+            <div id="dest-custom-badge" class="hidden mt-1 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs flex items-center justify-between">
+              <span id="dest-custom-name" class="font-medium text-rose-900 truncate"></span>
+              <button onclick="clearCustomPoint('destination')" class="text-slate-400 hover:text-red-500 font-bold px-1 text-xs">✕</button>
+            </div>
+          </div>
+
+          <!-- Quick-Filter Toggle (Fastest vs. Cheapest vs. Greenest) -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              ⚡ Quick-Filter Toggle
+            </label>
+            <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-lg text-xs font-medium">
+              <button type="button" id="pref-fastest" onclick="setPreference('fastest')" class="py-1 rounded-md bg-white shadow text-blue-700 font-bold transition">
+                ⚡ Fastest
+              </button>
+              <button type="button" id="pref-cheapest" onclick="setPreference('cheapest')" class="py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
+                💰 Cheapest
+              </button>
+              <button type="button" id="pref-greenest" onclick="setPreference('greenest')" class="py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
+                🌿 Greenest
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick presets -->
+          <div>
+            <span class="text-[11px] text-slate-400 font-medium">Quick Test Trips:</span>
+            <div class="flex flex-wrap gap-1.5 mt-1">
+              <button onclick="setTrip('BUS_RAJAGIRI', 'WM_S8')" class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
+                Rajagiri → Fort Kochi
+              </button>
+              <button onclick="setTrip('KMRL_ALVA', 'BUS_INFOPARK_P1')" class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
+                Aluva → Infopark
+              </button>
+              <button onclick="setTrip('WM_S1', 'KMRL_MGRD')" class="text-[11px] px-2 py-1 bg-slate-200/80 hover:bg-blue-100 hover:text-blue-700 text-slate-700 rounded transition">
+                Vyttila → MG Road
+              </button>
+            </div>
+          </div>
+
+          <button onclick="planTrip()" id="plan-btn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+            <i class="ph ph-magnifying-glass font-bold"></i> Find Multimodal Route
+          </button>
+        </div>
+
+        <!-- Result Container -->
+        <div id="route-result" class="hidden space-y-3">
+          <!-- Carbon Footprint / Eco-Savings Counter Widget -->
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-3 shadow-sm flex items-center justify-between text-xs" id="eco-widget">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+                🌱
+              </div>
+              <div>
+                <span class="font-bold text-emerald-950 block text-xs">Eco-Savings Counter</span>
+                <span class="text-[10px] text-emerald-700">CO₂ Avoided vs Private Car</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span id="co2-saved-val" class="text-base font-extrabold text-emerald-700 block">0.00 kg CO₂</span>
+              <span class="text-[10px] text-slate-500">Kochi1 Card: <b id="kochi1-fare-val" class="text-slate-800">₹0</b></span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Route Options</h3>
+            <span id="route-count-badge" class="text-[10px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">0 options</span>
+          </div>
+
+          <div id="options-container" class="space-y-3">
+            <!-- Dynamic Route Option Cards & Dropdown Steps injected here -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab Content: Transit Network Legend -->
+      <div id="tab-network" class="hidden flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Network Layers</h3>
+        <div class="space-y-2 text-xs">
+          <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <span class="flex items-center gap-2 font-medium">
+              <span class="w-3 h-3 rounded-full bg-blue-600"></span> Kochi Metro Line 1
+            </span>
+            <span class="text-slate-400 text-[11px]">25 Stations</span>
+          </label>
+          <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <span class="flex items-center gap-2 font-medium">
+              <span class="w-3 h-3 rounded-full bg-teal-600"></span> Water Metro Line 1 (Vyttila ↔ Kakkanad)
+            </span>
+            <span class="text-slate-400 text-[11px]">VYT-KKD</span>
+          </label>
+          <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <span class="flex items-center gap-2 font-medium">
+              <span class="w-3 h-3 rounded-full bg-teal-600"></span> Water Metro Line 2 (High Court ↔ Fort Kochi)
+            </span>
+            <span class="text-slate-400 text-[11px]">HCT-FKI</span>
+          </label>
+          <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <span class="flex items-center gap-2 font-medium">
+              <span class="w-3 h-3 rounded-full bg-orange-600"></span> Feeder Bus Routes
+            </span>
+            <span class="text-slate-400 text-[11px]">22 Stops</span>
+          </label>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Map Container -->
+    <main class="flex-1 relative">
+      <div id="map"></div>
+
+      <!-- Layer Switcher Floating Pill -->
+      <div class="absolute top-4 right-14 z-10 bg-white/90 backdrop-blur-md border border-slate-200 shadow-md rounded-xl p-1 flex gap-1 text-xs">
+        <button onclick="setMapTile('google_streets')" id="btn-tile-streets" class="px-2.5 py-1 rounded-lg font-medium bg-slate-900 text-white transition">Google Streets</button>
+        <button onclick="setMapTile('google_hybrid')" id="btn-tile-hybrid" class="px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Google Satellite</button>
+        <button onclick="setMapTile('osm')" id="btn-tile-osm" class="px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">OpenStreetMap</button>
+      </div>
+
+      <!-- Picking Mode Alert Banner -->
+      <div id="picking-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 border border-slate-700 animate-bounce">
+        <span class="w-3 h-3 rounded-full bg-blue-400 animate-ping"></span>
+        <span id="picking-banner-text" class="text-xs font-semibold tracking-wide">📍 Click anywhere on map to set point</span>
+        <button onclick="togglePickingMode(null)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[11px] font-medium">Cancel (Esc)</button>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    let map;
+    let currentTileLayer;
+    let stopsData = [];
+    let activeRouteLayer = null;
+    let networkLayerGroup = null;
+    let customOriginPoint = null;
+    let customDestPoint = null;
+    let pickingMode = null; // 'origin' | 'destination' | null
+    let activePreference = 'fastest';
+
+    const TILES = {
+      google_streets: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+      google_hybrid: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+      osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    };
+
+    function initMap() {
+      map = L.map('map', { zoomControl: false }).setView([10.0150, 76.3200], 12);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      currentTileLayer = L.tileLayer(TILES.google_streets, { maxZoom: 20, attribution: '&copy; Google Maps' }).addTo(map);
+      networkLayerGroup = L.layerGroup().addTo(map);
+
+      map.on('click', handleMapClick);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') togglePickingMode(null); });
+
+      loadTransitNetwork();
+    }
+
+    function setPreference(pref) {
+      activePreference = pref;
+      ['fastest', 'cheapest', 'greenest'].forEach(p => {
+        const btn = document.getElementById(`pref-${p}`);
+        if (btn) {
+          if (p === pref) {
+            btn.className = `py-1.5 rounded-md bg-white shadow font-bold transition ${p==='greenest' ? 'text-emerald-700' : 'text-blue-700'}`;
+          } else {
+            btn.className = 'py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition';
+          }
+        }
+      });
+      if ((customOriginPoint || document.getElementById('origin-select').value) &&
+          (customDestPoint || document.getElementById('dest-select').value)) {
+        planTrip();
+      }
+    }
+
+    function setMapTile(type) {
+      if (currentTileLayer) map.removeLayer(currentTileLayer);
+      currentTileLayer = L.tileLayer(TILES[type], { maxZoom: 20 }).addTo(map);
+      ['streets', 'hybrid', 'osm'].forEach(t => {
+        const btn = document.getElementById(`btn-tile-${t}`);
+        if (btn) btn.className = (t === type || (t==='streets' && type==='google_streets') || (t==='hybrid' && type==='google_hybrid'))
+          ? 'px-2.5 py-1 rounded-lg font-medium bg-slate-900 text-white transition'
+          : 'px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition';
+      });
+    }
+
+    async function reverseGeocode(lat, lon) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.display_name) return data.display_name.split(',').slice(0, 3).join(', ');
+        }
+      } catch (e) {}
+      return `Point (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+    }
+
+    function togglePickingMode(mode) {
+      pickingMode = mode;
+      const banner = document.getElementById('picking-banner');
+      const text = document.getElementById('picking-banner-text');
+      const mapEl = document.getElementById('map');
+
+      if (pickingMode) {
+        banner.classList.remove('hidden');
+        text.innerText = mode === 'origin' ? '🚀 Click anywhere on Google Map to set STARTING POINT' : '🏁 Click anywhere on Google Map to set DESTINATION POINT';
+        mapEl.classList.add('picking-mode-cursor');
+      } else {
+        banner.classList.add('hidden');
+        mapEl.classList.remove('picking-mode-cursor');
+      }
+    }
+
+    async function handleMapClick(e) {
+      const { lat, lng } = e.latlng;
+      if (pickingMode) {
+        const name = await reverseGeocode(lat, lng);
+        setCustomPoint(pickingMode, { name, lat, lon: lng });
+        togglePickingMode(null);
+      } else {
+        const popup = L.popup()
+          .setLatLng([lat, lng])
+          .setContent(`
+            <div style="font-family:sans-serif;padding:4px;text-align:center;min-width:170px;">
+              <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:2px;">📍 Picked Location</div>
+              <div style="font-size:11px;color:#64748b;margin-bottom:8px;font-family:monospace;">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
+              <div style="display:flex;gap:6px;justify-content:center;">
+                <button onclick="setMapClickPoint('origin', ${lat}, ${lng})" style="background:#059669;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">🚀 Set Start</button>
+                <button onclick="setMapClickPoint('destination', ${lat}, ${lng})" style="background:#dc2626;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">🏁 Set End</button>
+              </div>
+            </div>
+          `).openOn(map);
+      }
+    }
+
+    async function setMapClickPoint(type, lat, lon) {
+      map.closePopup();
+      const name = await reverseGeocode(lat, lon);
+      setCustomPoint(type, { name, lat, lon });
+    }
+
+    function setCustomPoint(type, pt) {
+      if (type === 'origin') {
+        customOriginPoint = pt;
+        document.getElementById('origin-select').value = '';
+        document.getElementById('origin-custom-name').innerText = `🚀 ${pt.name}`;
+        document.getElementById('origin-custom-badge').classList.remove('hidden');
+      } else {
+        customDestPoint = pt;
+        document.getElementById('dest-select').value = '';
+        document.getElementById('dest-custom-name').innerText = `🏁 ${pt.name}`;
+        document.getElementById('dest-custom-badge').classList.remove('hidden');
+      }
+      if ((customOriginPoint || document.getElementById('origin-select').value) &&
+          (customDestPoint || document.getElementById('dest-select').value)) {
+        planTrip();
+      }
+    }
+
+    function clearCustomPoint(type) {
+      if (type === 'origin') {
+        customOriginPoint = null;
+        document.getElementById('origin-custom-badge').classList.add('hidden');
+      } else {
+        customDestPoint = null;
+        document.getElementById('dest-custom-badge').classList.add('hidden');
+      }
+    }
+
+    function onOriginChange() {
+      if (document.getElementById('origin-select').value) clearCustomPoint('origin');
+    }
+    function onDestChange() {
+      if (document.getElementById('dest-select').value) clearCustomPoint('destination');
+    }
+
+    function swapOriginDest() {
+      const tempPt = customOriginPoint;
+      customOriginPoint = customDestPoint;
+      customDestPoint = tempPt;
+
+      const origSel = document.getElementById('origin-select');
+      const destSel = document.getElementById('dest-select');
+      const tempVal = origSel.value;
+      origSel.value = destSel.value;
+      destSel.value = tempVal;
+
+      if (customOriginPoint) setCustomPoint('origin', customOriginPoint); else clearCustomPoint('origin');
+      if (customDestPoint) setCustomPoint('destination', customDestPoint); else clearCustomPoint('destination');
+
+      planTrip();
+    }
+
+    async function loadTransitNetwork() {
+      try {
+        const res = await fetch('/api/transit/network-graph');
+        const data = await res.json();
+        stopsData = data.stops;
+
+        const origSelect = document.getElementById('origin-select');
+        const destSelect = document.getElementById('dest-select');
+
+        stopsData.sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+          origSelect.add(new Option(`${s.name} (${s.agency})`, s.id));
+          destSelect.add(new Option(`${s.name} (${s.agency})`, s.id));
+        });
+
+        // Add stop markers
+        stopsData.forEach(stop => {
+          let color = stop.mode === 'water_metro' ? '#0d9488' : (stop.mode === 'bus' ? '#f97316' : '#3b82f6');
+          const icon = L.divIcon({
+            html: `<div style="background:${color};color:white;border-radius:50%;border:2px solid white;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;box-shadow:0 2px 4px rgba(0,0,0,0.3);">${stop.mode==='water_metro'?'🚤':(stop.mode==='bus'?'🚌':'🚆')}</div>`,
+            iconSize: [22, 22], iconAnchor: [11, 11]
+          });
+          const m = L.marker([stop.lat, stop.lon], { icon }).addTo(networkLayerGroup);
+          m.bindPopup(`
+            <div style="text-align:center;font-family:sans-serif;padding:2px;">
+              <b>${stop.name}</b><br/>
+              <span style="font-size:10px;color:${color};font-weight:bold;">${stop.agency}</span><br/>
+              <div style="margin-top:6px;display:flex;gap:4px;justify-center;">
+                <button onclick="setStopPoint('origin', '${stop.id}')" style="background:#059669;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;">🚀 Start</button>
+                <button onclick="setStopPoint('destination', '${stop.id}')" style="background:#dc2626;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;">🏁 End</button>
+              </div>
+            </div>
+          `);
+        });
+
+      } catch (err) { console.error("Failed to load transit network:", err); }
+    }
+
+    function setStopPoint(type, stopId) {
+      map.closePopup();
+      if (type === 'origin') {
+        clearCustomPoint('origin');
+        document.getElementById('origin-select').value = stopId;
+      } else {
+        clearCustomPoint('destination');
+        document.getElementById('dest-select').value = stopId;
+      }
+      planTrip();
+    }
+
+    function setTrip(orig, dest) {
+      clearCustomPoint('origin');
+      clearCustomPoint('destination');
+      document.getElementById('origin-select').value = orig;
+      document.getElementById('dest-select').value = dest;
+      planTrip();
+    }
+
+    async function planTrip() {
+      const origId = document.getElementById('origin-select').value;
+      const destId = document.getElementById('dest-select').value;
+
+      const payload = { preference: activePreference };
+      if (customOriginPoint) {
+        payload.origin_lat = customOriginPoint.lat;
+        payload.origin_lon = customOriginPoint.lon;
+        payload.origin_name = customOriginPoint.name;
+      } else if (origId) {
+        payload.origin_id = origId;
+      } else {
+        return;
+      }
+
+      if (customDestPoint) {
+        payload.dest_lat = customDestPoint.lat;
+        payload.dest_lon = customDestPoint.lon;
+        payload.dest_name = customDestPoint.name;
+      } else if (destId) {
+        payload.destination_id = destId;
+      } else {
+        return;
+      }
+
+      const btn = document.getElementById('plan-btn');
+      btn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> Calculating Route...`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/routing/plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("No path found");
+        const data = await res.json();
+        displayRouteResult(data);
+      } catch (err) {
+        alert("Could not find a route between selected points.");
+      } finally {
+        btn.innerHTML = `<i class="ph ph-magnifying-glass font-bold"></i> Find Multimodal Route`;
+        btn.disabled = false;
+      }
+    }
+
+    let currentRouteOptions = [];
+    let selectedOptionIndex = 0;
+
+    function displayRouteResult(data) {
+      document.getElementById('route-result').classList.remove('hidden');
+      currentRouteOptions = (data.options && data.options.length > 0) ? data.options : [data];
+      document.getElementById('route-count-badge').innerText = `${currentRouteOptions.length} option${currentRouteOptions.length > 1 ? 's' : ''}`;
+      
+      const mainRoute = currentRouteOptions[0];
+      const co2Val = mainRoute.co2_saved_kg || (mainRoute.total_distance_km * 0.12).toFixed(2);
+      const kochi1Val = mainRoute.kochi1_card_fare || Math.round(mainRoute.total_fare * 0.8);
+      document.getElementById('co2-saved-val').innerText = `${co2Val} kg CO₂`;
+      document.getElementById('kochi1-fare-val').innerText = `₹${kochi1Val}`;
+
+      renderOptionCards();
+      selectOption(0);
+    }
+
+    function renderOptionCards() {
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+      currentRouteOptions.forEach((opt, idx) => {
+        const card = document.createElement('div');
+        const isSelected = (idx === selectedOptionIndex);
+        const co2Val = opt.co2_saved_kg || (opt.total_distance_km * 0.12).toFixed(2);
+        card.className = `border rounded-xl p-3.5 transition ${isSelected ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/20 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'}`;
+        card.innerHTML = `
+          <div onclick="selectOption(${idx})" class="cursor-pointer space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800">${opt.title || `Option ${idx+1}`}</span>
+              <div class="text-right">
+                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">₹${opt.total_fare}</span>
+                <span class="text-[10px] text-emerald-600 block mt-0.5 font-semibold">🌱 ${co2Val}kg CO₂</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-center text-xs pt-1">
+              <div class="bg-white/80 p-1 rounded-lg border border-slate-200"><span class="text-slate-400 block text-[9px]">TIME</span><span class="font-bold text-slate-800 text-xs">${opt.total_duration_min}m</span></div>
+              <div class="bg-white/80 p-1 rounded-lg border border-slate-200"><span class="text-slate-400 block text-[9px]">DIST</span><span class="font-bold text-slate-800 text-xs">${opt.total_distance_km}km</span></div>
+              <div class="bg-white/80 p-1 rounded-lg border border-slate-200"><span class="text-slate-400 block text-[9px]">TRANSFERS</span><span class="font-bold text-slate-800 text-xs">${opt.transfer_count}</span></div>
+            </div>
+          </div>
+          <div class="space-y-1 mt-2 pt-2 border-t border-dashed border-slate-200 text-xs">
+            ${opt.legs.map(leg => `<div class="p-1.5 bg-slate-50 rounded border border-slate-200">${leg.instruction} (${leg.duration_min}m)</div>`).join('')}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectOption(idx) {
+      selectedOptionIndex = idx;
+      const data = currentRouteOptions[idx];
+      if (!data) return;
+
+      if (activeRouteLayer) map.removeLayer(activeRouteLayer);
+      activeRouteLayer = L.layerGroup().addTo(map);
+
+      if (data.route_polyline && data.route_polyline.length > 0) {
+        const poly = L.polyline(data.route_polyline, { color: '#2563eb', weight: 6, opacity: 0.9 }).addTo(activeRouteLayer);
+        map.fitBounds(poly.getBounds(), { padding: [60, 60] });
+      }
+
+      if (data.origin?.lat) {
+        const icon = L.divIcon({ html: `<div style="background:#059669;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🚀</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+        L.marker([data.origin.lat, data.origin.lon], { icon }).addTo(activeRouteLayer).bindPopup(`<b>Start: ${data.origin.name}</b>`);
+      }
+      if (data.destination?.lat) {
+        const icon = L.divIcon({ html: `<div style="background:#dc2626;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🏁</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+        L.marker([data.destination.lat, data.destination.lon], { icon }).addTo(activeRouteLayer).bindPopup(`<b>End: ${data.destination.name}</b>`);
+      }
+    }
+
+    function switchTab(tab) {
+      if (tab === 'plan') {
+        document.getElementById('tab-plan').classList.remove('hidden');
+        document.getElementById('tab-network').classList.add('hidden');
+      } else {
+        document.getElementById('tab-plan').classList.add('hidden');
+        document.getElementById('tab-network').classList.remove('hidden');
+      }
+    }
+
+    window.onload = () => { initMap(); };
+  </script>
+</body>
+</html>
