@@ -21,7 +21,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
+            return caches.delete(cache); //deletes old version when new version is deployed
           }
         })
       );
@@ -33,11 +33,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Network first strategy for API requests, cache first for static assets
   if (event.request.url.includes('/api/')) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(fetch(event.request)); //for api calls
   } else {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        return cachedResponse || fetch(event.request);
+        return cachedResponse || fetch(event.request); //for static ui elements 
       })
     );
   }

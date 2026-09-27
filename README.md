@@ -11,18 +11,7 @@ This repository contains the working **30% Prototype** for the smartRoute platfo
 
 ---
 
-## 2. Team Work Division (30% Deliverables)
-
-| Member | Domain | Delivered Code & Files |
-| :--- | :--- | :--- |
-| **Member 3** | **Database & GIS Pipeline** | `backend/app/services/data_ingestion.py`, `backend/app/db/models.py`, `smartroute.db` SQLite spatial database with 60 stops and 144 multimodal edges. |
-| **Member 2** | **Backend & Routing Logic** | `backend/app/services/dijkstra.py` (Multimodal Dijkstra shortest path algorithm), `backend/app/routers/routing.py`, `backend/main.py`. |
-| **Member 1** | **Frontend & Visualization** | `frontend/index.html` (Interactive Leaflet Map dashboard), `frontend/src/components/MapVisualizer.jsx`, `frontend/src/components/JourneyPlanner.jsx`. |
-| **Member 4** | **AI Systems & Validation** | `backend/app/routers/ai_assistant.py` (Gemini API travel assistant + NLP query parsing), `backend/test_dijkstra.py`, `backend/test_api.py`. |
-
----
-
-## 3. Quick Start (Run in 1 Command)
+## 2. Quick Start (Run in 1 Command)
 
 ### Prerequisites
 - Python 3.10+
@@ -47,7 +36,7 @@ You will immediately see the interactive **Leaflet Map Dashboard** loaded with:
 
 ---
 
-## 4. Running Verification Tests
+## 3. Running Verification Tests
 
 To verify that the Dijkstra routing and API endpoints work properly from the command line:
 

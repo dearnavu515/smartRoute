@@ -16,16 +16,16 @@ export default function JourneyPlanner({
   onPreferenceChange,
   onSelectOption
 }) {
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e) => {  //when you press submit
+    e.preventDefault();  //Stops standard browser form reload.
     if (!origin || !destination) {
       alert("Please choose both an origin and a destination point.");
       return;
     }
-    onPlanRoute(origin, destination, preference);
+    onPlanRoute(origin, destination, preference);  //Triggers Backend Route Calculation
   };
 
-  const handleQuickPick = (origId, destId) => {
+  const handleQuickPick = (origId, destId) => {  //when user selects on map
     const origStop = stops.find((s) => s.id === origId) || origId;
     const destStop = stops.find((s) => s.id === destId) || destId;
     onSelectOrigin(origStop);
