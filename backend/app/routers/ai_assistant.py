@@ -19,54 +19,53 @@ class AIChatResponse(BaseModel):
 
 @router.post("/chat", response_model=AIChatResponse)
 def ai_chat(req: AIChatRequest, db: Session = Depends(get_db)):
+    """
+    AI Travel Assistant Endpoint.
+    Uses NLP / keyword matching to extract origin & destination stops from user query,
+    then generates multimodal travel recommendations or calls Gemini API if key is present.
+    """
     user_msg = req.message.lower()
     stops = db.query(Stop).all()
 
-    # Detect if any known stops are mentioned
+    # Detect known stops mentioned in user prompt
     detected_stops = []
     for s in stops:
-        s_clean = s.name.lower().replace(" metro", "").replace(" water metro", "").replace(" bus stop", "")
-        if s_clean in user_msg or s.name.lower() in user_msg:
+        clean_name = s.name.lower().replace(" metro", "").replace(" water metro", "").replace(" bus stop", "")
+        if clean_name in user_msg or s.name.lower() in user_msg:
             detected_stops.append(s)
 
     gemini_key = os.getenv("GEMINI_API_KEY")
 
-    # If Gemini API key is available, attempt LLM call
+    # If Gemini API Key is configured, use Google GenAI LLM
     if gemini_key:
         try:
             from google import genai
             client = genai.Client(api_key=gemini_key)
-            prompt = f"""You are the smartRoute AI Travel Assistant for the Greater Kochi Multimodal Transit Network (Kochi Metro, Kochi Water Metro, and Feeder Buses).
+            prompt = f"""You are the smartRoute AI Travel Assistant for Greater Kochi Multimodal Transit (Kochi Metro, Water Metro, Feeder Buses).
 User Query: {req.message}
-Known transit modes:
-1. Kochi Metro Line 1 (Aluva to Thripunithura - 25 stations).
-2. Kochi Water Metro (Line 1: Vyttila ↔ Kakkanad | Line 2: High Court ↔ Fort Kochi via Vypin). Note: Kakkanad Water Metro connects Kakkanad to Vyttila, not directly to Fort Kochi.
-3. Feeder Buses: Kalamassery, Kakkanad Civil Station, Infopark Phase 1 & 2, Rajagiri College / RSET, CUSAT, MG Road, Kadavanthra.
-
-Provide a concise, polite, and practical multimodal transit recommendation."""
+Provide a polite, concise travel recommendation in 3-4 bullet points."""
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
             )
             return AIChatResponse(reply=response.text)
-        except Exception as e:
+        except Exception:
             pass
 
-    # Intelligent fallback when LLM key is not configured
+    # Intelligent local route detection fallback
     if len(detected_stops) >= 2:
-        orig = detected_stops[0]
-        dest = detected_stops[1]
+        orig, dest = detected_stops[0], detected_stops[1]
         router_instance = MultimodalRouter(db)
         itinerary = router_instance.find_shortest_path(orig.id, dest.id)
         if itinerary:
-            steps_summary = " -> ".join([leg["to_stop"]["name"] for leg in itinerary["legs"][:4]])
+            steps_summary = " ➔ ".join([leg["to_stop"]["name"] for leg in itinerary["legs"][:4]])
             reply = (
-                f"Based on your query, here is the recommended multimodal route from **{orig.name}** to **{dest.name}**:\n\n"
-                f"- **Total Duration**: ~{itinerary['total_duration_min']} mins\n"
-                f"- **Estimated Fare**: Rs. {itinerary['total_fare']}\n"
-                f"- **Modes Used**: {', '.join(itinerary['modes']).upper()}\n\n"
-                f"**Key Segments**: {steps_summary}...\n"
-                f"The complete route is mapped in the Journey Planner!"
+                f"Recommended multimodal route from **{orig.name}** to **{dest.name}**:\n\n"
+                f"• **Duration**: ~{itinerary['total_duration_min']} mins\n"
+                f"• **Estimated Fare**: ₹{itinerary['total_fare']}\n"
+                f"• **Transport Modes**: {', '.join(itinerary['modes']).upper()}\n\n"
+                f"**Key Stops**: {steps_summary}\n"
+                f"The complete route is mapped in your Journey Planner!"
             )
             return AIChatResponse(
                 reply=reply,
@@ -75,11 +74,10 @@ Provide a concise, polite, and practical multimodal transit recommendation."""
                 itinerary_preview=itinerary
             )
 
-    # General assistance
     return AIChatResponse(
         reply=(
             "Hello! I am your **smartRoute AI Travel Assistant**. "
-            "You can ask me how to travel between any points in Greater Kochi (e.g. *'How to go from Rajagiri to Fort Kochi?'* or *'Fastest route from Aluva to Infopark'*) "
-            "and I will calculate the best multimodal combination of Metro, Water Metro, and Feeder Bus for you!"
+            "Ask me how to travel between any points in Greater Kochi "
+            "(e.g., *'How to go from Rajagiri to Fort Kochi?'* or *'Fastest route from Aluva to Infopark'*)!"
         )
     )
