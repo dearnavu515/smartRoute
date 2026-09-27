@@ -637,16 +637,6 @@
       }
     }
 
-      if (data.origin?.lat) {
-        const icon = L.divIcon({ html: `<div style="background:#059669;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🚀</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
-        L.marker([data.origin.lat, data.origin.lon], { icon }).addTo(activeRouteLayer).bindPopup(`<b>Start: ${data.origin.name}</b>`);
-      }
-      if (data.destination?.lat) {
-        const icon = L.divIcon({ html: `<div style="background:#dc2626;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🏁</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
-        L.marker([data.destination.lat, data.destination.lon], { icon }).addTo(activeRouteLayer).bindPopup(`<b>End: ${data.destination.name}</b>`);
-      }
-    }
-
     function switchTab(tab) {
       if (tab === 'plan') {
         document.getElementById('tab-plan').classList.remove('hidden');
