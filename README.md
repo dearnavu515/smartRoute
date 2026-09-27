@@ -1,14 +1,7 @@
 # smartRoute: AI-Enabled Multimodal MaaS Platform
 
-**Guide**: Mr. Paul Augustine  
-**Team**: Martina Ajish (U2303147), Merin Benny (U2303151), Milee B Kokkatt (U2303152), Navami Anilkumar (U2303164)  
-**Institution**: Rajagiri School of Engineering & Technology (RSET)
 
----
-
-## 30% Code Implementation Prototype
-
-This repository contains the working **30% Milestone Prototype** for the smartRoute platform, unifying Greater Kochi's public transit network into an integrated Mobility-as-a-Service (MaaS) system.
+This repository contains the working **30% Prototype** for the smartRoute platform, unifying Kochi's public transit network into an integrated Mobility-as-a-Service (MaaS) system.
 
 ### 1. Real Datasets Integrated
 - **Kochi Metro Rail Limited (KMRL)**: Complete official GTFS feed (25 stations from Aluva to Thripunithura, shapes, timetables, and fare tables).
