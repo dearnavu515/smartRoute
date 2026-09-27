@@ -298,21 +298,35 @@ export default function JourneyPlanner({
           <div>
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Turn-by-Turn Guidance</h3>
             <div className="space-y-2 text-xs">
-              {activeRoute.legs?.map((leg) => (
-                <div key={leg.step} className="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-slate-200 shadow-sm">
-                  <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                    {leg.step}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-800">{leg.instruction}</p>
-                    <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
-                      <span>⏱ {leg.duration_min} min</span>
-                      <span>📏 {leg.distance_km} km</span>
-                      {leg.fare > 0 && <span>🎟 ₹{leg.fare}</span>}
+              {activeRoute.legs?.map((leg) => {
+                const modeColors = {
+                  metro: { bg: "bg-blue-600", text: "text-blue-700", border: "border-blue-200", label: "Blue Line (Metro)" },
+                  water_metro: { bg: "bg-teal-600", text: "text-teal-700", border: "border-teal-200", label: "Teal Line (Water Metro)" },
+                  bus: { bg: "bg-orange-500", text: "text-orange-700", border: "border-orange-200", label: "Orange Line (Feeder Bus)" },
+                  walk: { bg: "bg-slate-500", text: "text-slate-600", border: "border-slate-200", label: "Dotted Line (Walk)" }
+                };
+                const cfg = modeColors[leg.mode] || modeColors.walk;
+
+                return (
+                  <div key={leg.step} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white border border-slate-200 shadow-xs">
+                    <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                      {leg.step}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded text-[10px] bg-slate-50 border ${cfg.text} ${cfg.border}`}>
+                          <span className={`w-2.5 h-2.5 rounded-full ${cfg.bg}`} />
+                          {cfg.label}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {leg.duration_min} min • {leg.distance_km} km {leg.fare > 0 ? `• ₹${leg.fare}` : ""}
+                        </span>
+                      </div>
+                      <p className="font-medium text-slate-800 text-xs">{leg.instruction}</p>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

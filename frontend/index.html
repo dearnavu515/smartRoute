@@ -235,6 +235,23 @@
         <span id="picking-banner-text" class="text-xs font-semibold tracking-wide">📍 Click anywhere on map to set point</span>
         <button onclick="togglePickingMode(null)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[11px] font-medium">Cancel (Esc)</button>
       </div>
+
+      <!-- Route Map Color Line Legend Pill -->
+      <div id="route-color-legend" class="hidden absolute bottom-5 left-1/2 -translate-x-1/2 z-20 bg-slate-900/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-3.5 text-xs border border-slate-700">
+        <span class="font-bold text-[10px] text-slate-400 uppercase tracking-wider">Line Colors:</span>
+        <span class="flex items-center gap-1.5 font-semibold text-blue-300">
+          <span class="w-3.5 h-1.5 bg-blue-600 rounded-full"></span> 🚆 Metro (Blue Line)
+        </span>
+        <span class="flex items-center gap-1.5 font-semibold text-teal-300">
+          <span class="w-3.5 h-1.5 bg-teal-500 rounded-full"></span> 🚤 Water Metro (Teal Line)
+        </span>
+        <span class="flex items-center gap-1.5 font-semibold text-orange-300">
+          <span class="w-3.5 h-1.5 bg-orange-500 rounded-full"></span> 🚌 Feeder Bus (Orange Line)
+        </span>
+        <span class="flex items-center gap-1.5 font-semibold text-slate-300">
+          <span class="w-3.5 h-1 bg-slate-400 rounded border-b border-dashed"></span> 🚶 Walk (Dotted Line)
+        </span>
+      </div>
     </main>
 
   </div>
@@ -510,6 +527,13 @@
       selectOption(0);
     }
 
+    const LEG_MODE_CONFIG = {
+      metro: { bg: 'bg-blue-600', text: 'text-blue-700', label: 'Blue Line (Metro)', icon: '🚆', border: 'border-blue-200' },
+      water_metro: { bg: 'bg-teal-600', text: 'text-teal-700', label: 'Teal Line (Water Metro)', icon: '🚤', border: 'border-teal-200' },
+      bus: { bg: 'bg-orange-500', text: 'text-orange-700', label: 'Orange Line (Feeder Bus)', icon: '🚌', border: 'border-orange-200' },
+      walk: { bg: 'bg-slate-500', text: 'text-slate-600', label: 'Dotted Line (Walk)', icon: '🚶', border: 'border-slate-200' }
+    };
+
     function renderOptionCards() {
       const container = document.getElementById('options-container');
       container.innerHTML = '';
@@ -518,6 +542,25 @@
         const isSelected = (idx === selectedOptionIndex);
         const co2Val = opt.co2_saved_kg || (opt.total_distance_km * 0.12).toFixed(2);
         card.className = `border rounded-xl p-3.5 transition ${isSelected ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/20 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'}`;
+        
+        const legsHtml = opt.legs.map(leg => {
+          const cfg = LEG_MODE_CONFIG[leg.mode] || LEG_MODE_CONFIG.walk;
+          return `
+            <div class="p-2 bg-white rounded-lg border border-slate-200 flex flex-col gap-1 shadow-xs">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded text-[10px] bg-slate-50 border ${cfg.text} ${cfg.border}">
+                  <span class="w-2.5 h-2.5 rounded-full ${cfg.bg}"></span>
+                  ${cfg.label}
+                </span>
+                <span class="text-slate-500 text-[10px] font-semibold">${leg.duration_min}m • ${leg.distance_km}km ${leg.fare > 0 ? `• ₹${leg.fare}` : ''}</span>
+              </div>
+              <div class="text-slate-800 font-medium text-xs pl-1">
+                ${leg.instruction}
+              </div>
+            </div>
+          `;
+        }).join('');
+
         card.innerHTML = `
           <div onclick="selectOption(${idx})" class="cursor-pointer space-y-2">
             <div class="flex items-center justify-between">
@@ -533,8 +576,8 @@
               <div class="bg-white/80 p-1 rounded-lg border border-slate-200"><span class="text-slate-400 block text-[9px]">TRANSFERS</span><span class="font-bold text-slate-800 text-xs">${opt.transfer_count}</span></div>
             </div>
           </div>
-          <div class="space-y-1 mt-2 pt-2 border-t border-dashed border-slate-200 text-xs">
-            ${opt.legs.map(leg => `<div class="p-1.5 bg-slate-50 rounded border border-slate-200">${leg.instruction} (${leg.duration_min}m)</div>`).join('')}
+          <div class="space-y-1.5 mt-2.5 pt-2.5 border-t border-dashed border-slate-200 text-xs">
+            ${legsHtml}
           </div>
         `;
         container.appendChild(card);
@@ -546,6 +589,10 @@
       const data = currentRouteOptions[idx];
       if (!data) return;
 
+      // Show floating map color line legend
+      const legend = document.getElementById('route-color-legend');
+      if (legend) legend.classList.remove('hidden');
+
       if (activeRouteLayer) map.removeLayer(activeRouteLayer);
       activeRouteLayer = L.layerGroup().addTo(map);
 
@@ -553,10 +600,10 @@
       if (data.legs && data.legs.length > 0) {
         data.legs.forEach(leg => {
           const modeColors = {
-            metro: '#1d4ed8',        // Blue
-            water_metro: '#0d9488',  // Teal
-            bus: '#ea580c',          // Orange
-            walk: '#475569'          // Slate/Dotted
+            metro: '#1d4ed8',        // Blue Line
+            water_metro: '#0d9488',  // Teal Line
+            bus: '#ea580c',          // Orange Line
+            walk: '#475569'          // Slate Dotted Line
           };
           const color = modeColors[leg.mode] || '#2563eb';
           const isWalk = leg.mode === 'walk';
@@ -579,6 +626,16 @@
         const poly = L.polyline(data.route_polyline, { color: '#2563eb', weight: 7, opacity: 0.9 }).addTo(activeRouteLayer);
         map.fitBounds(poly.getBounds(), { padding: [60, 60] });
       }
+
+      if (data.origin?.lat) {
+        const icon = L.divIcon({ html: `<div style="background:#059669;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🚀</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+        L.marker([data.origin.lat, data.origin.lon], { icon }).addTo(activeRouteLayer).bindPopup(`<b>Start: ${data.origin.name}</b>`);
+      }
+      if (data.destination?.lat) {
+        const icon = L.divIcon({ html: `<div style="background:#dc2626;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🏁</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+        L.marker([data.destination.lat, data.destination.lon], { icon }).addTo(activeRouteLayer).bindPopup(`<b>End: ${data.destination.name}</b>`);
+      }
+    }
 
       if (data.origin?.lat) {
         const icon = L.divIcon({ html: `<div style="background:#059669;color:white;border-radius:50%;border:2px solid white;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-size:16px;">🚀</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
