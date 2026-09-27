@@ -145,32 +145,42 @@ export default function MapVisualizer({
     };
   }, [pickingMode, onSelectPoint]);
 
-  // Update Network Stops Layer
+  // Update Network Lines & Subtle Stop Dots Layer
   useEffect(() => {
     if (!leafletMap.current || !networkData?.stops || !networkLayerRef.current) return;
     networkLayerRef.current.clearLayers();
 
+    // 1. Draw Network Lines (Metro, Water Metro, Feeder Buses)
+    if (networkData.edges) {
+      networkData.edges.forEach((edge) => {
+        if (edge.geometry && edge.geometry.length > 0 && edge.mode !== "walk") {
+          const color = edge.mode === "water_metro" ? "#0d9488" : edge.mode === "bus" ? "#f97316" : "#2563eb";
+          L.polyline(edge.geometry, {
+            color: color,
+            weight: edge.mode === "metro" ? 4 : 3,
+            opacity: 0.65,
+            lineCap: "round",
+            lineJoin: "round"
+          }).addTo(networkLayerRef.current);
+        }
+      });
+    }
+
+    // 2. Draw subtle small station dots (no emoji icon clutter)
     networkData.stops.forEach((stop) => {
-      let color = "#3b82f6"; // metro blue
-      let iconSymbol = "🚆";
-      if (stop.mode === "water_metro") {
-        color = "#0d9488"; // teal
-        iconSymbol = "🚤";
-      } else if (stop.mode === "bus") {
-        color = "#f97316"; // orange
-        iconSymbol = "🚌";
-      }
+      let color = "#2563eb";
+      if (stop.mode === "water_metro") color = "#0d9488";
+      else if (stop.mode === "bus") color = "#f97316";
 
-      const iconHtml = `
-        <div style="background:${color};color:white;border-radius:50%;border:2px solid white;width:24px;height:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:11px;cursor:pointer;" title="${stop.name}">
-          ${iconSymbol}
-        </div>
-      `;
-      const stopIcon = L.divIcon({ className: "", html: iconHtml, iconSize: [24, 24], iconAnchor: [12, 12] });
+      const circle = L.circleMarker([stop.lat, stop.lon], {
+        radius: 4,
+        fillColor: color,
+        color: "#ffffff",
+        weight: 1.5,
+        fillOpacity: 0.9
+      }).addTo(networkLayerRef.current);
 
-      const marker = L.marker([stop.lat, stop.lon], { icon: stopIcon }).addTo(networkLayerRef.current);
-
-      marker.bindPopup(`
+      circle.bindPopup(`
         <div style="font-family:sans-serif;padding:4px;text-align:center;min-width:180px;">
           <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:2px;">${stop.name}</div>
           <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;margin-bottom:8px;">
@@ -187,7 +197,7 @@ export default function MapVisualizer({
         </div>
       `);
 
-      marker.on("popupopen", () => {
+      circle.on("popupopen", () => {
         document.getElementById(`btn-stop-start-${stop.id}`)?.addEventListener("click", () => {
           leafletMap.current.closePopup();
           onSelectPoint("origin", stop);
@@ -254,15 +264,40 @@ export default function MapVisualizer({
     }
   }, [origin, destination, onSelectPoint]);
 
-  // Update Route Polyline
+  // Update Route Polyline (Draw mode-colored leg polylines)
   useEffect(() => {
     if (!leafletMap.current || !routeLayerRef.current) return;
     routeLayerRef.current.clearLayers();
 
-    if (activeRoute?.route_polyline && activeRoute.route_polyline.length > 0) {
+    if (activeRoute?.legs && activeRoute.legs.length > 0) {
+      activeRoute.legs.forEach((leg) => {
+        const modeColors = {
+          metro: "#1d4ed8",
+          water_metro: "#0d9488",
+          bus: "#ea580c",
+          walk: "#475569"
+        };
+        const color = modeColors[leg.mode] || "#2563eb";
+        const isWalk = leg.mode === "walk";
+        if (leg.geometry && leg.geometry.length > 0) {
+          L.polyline(leg.geometry, {
+            color: color,
+            weight: isWalk ? 5 : 7,
+            opacity: 0.95,
+            dashArray: isWalk ? "6, 8" : null,
+            lineCap: "round",
+            lineJoin: "round"
+          }).addTo(routeLayerRef.current);
+        }
+      });
+
+      if (activeRoute.route_polyline && activeRoute.route_polyline.length > 0) {
+        leafletMap.current.fitBounds(L.polyline(activeRoute.route_polyline).getBounds(), { padding: [60, 60] });
+      }
+    } else if (activeRoute?.route_polyline && activeRoute.route_polyline.length > 0) {
       const poly = L.polyline(activeRoute.route_polyline, {
         color: "#2563eb",
-        weight: 6,
+        weight: 7,
         opacity: 0.9,
         lineCap: "round",
         lineJoin: "round"
