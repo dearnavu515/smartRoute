@@ -33,7 +33,7 @@ export default function JourneyPlanner({
     onPlanRoute(origStop, destStop, preference);
   };
 
-  const renderPointInput = (type, point, setPoint) => {
+  const renderPointInput = (type, point, setPoint) => {   //for display
     const isOrigin = type === "origin";
     const isPickingThis = pickingMode === type;
 
